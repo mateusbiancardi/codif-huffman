@@ -27,6 +27,22 @@ Arvore *criaNoInterno(Arvore *esquerda, Arvore *direita);
 int getFrequencia(Arvore *a);
 
 /**
+ * @brief Compara a frequência de dois nós da árvore
+ *
+ * Esta função compara os valores de frequência de dois nós da árvore,
+ * tipicamente usada para operações de ordenação em estruturas de dados baseadas
+ * em árvore como árvores de Huffman.
+ *
+ * @param arv1 Ponteiro para o primeiro nó da árvore a ser comparado
+ * @param arv2 Ponteiro para o segundo nó da árvore a ser comparado
+ * @return int Retorna:
+ *         - valor negativo se frequência de arv1 < frequência de arv2
+ *         - 0 se as frequências são iguais
+ *         - valor positivo se frequência de arv1 > frequência de arv2
+ */
+int comparaFrequencia(void *arv1, void *arv2);
+
+/**
  * @brief Obtém o caractere armazenado em um nó folha da árvore
  * @param a Ponteiro para o nó da árvore
  * @return O caractere armazenado no nó (válido apenas para nós folha)

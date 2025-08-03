@@ -31,6 +31,13 @@ Arvore *criaNoInterno(Arvore *esquerda, Arvore *direita) {
 
 int getFrequencia(Arvore *a) { return a->frequencia; };
 
+int comparaFrequencia(void *arv1, void *arv2) {
+  Arvore *arvore1 = arv1;
+  Arvore *arvore2 = arv2;
+
+  return getFrequencia(arvore1) - getFrequencia(arvore2);
+};
+
 unsigned char getCaractere(Arvore *a) { return a->caractere; };
 
 Arvore *getEsquerda(Arvore *a) { return a->esquerda; };
