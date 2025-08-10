@@ -18,5 +18,7 @@ bitmap* bitmapInit(unsigned int max_size);
 unsigned char bitmapGetBit(bitmap* bm, unsigned int index);
 void bitmapAppendLeastSignificantBit(bitmap* bm, unsigned char bit);
 void bitmapLibera (bitmap* bm);
+//remove o ultimo bit do mapa de bits, decrementando o tamanho
+void bitmapRemoveLastBit(bitmap* bm);
 
 #endif /*BITMAP_H_*/

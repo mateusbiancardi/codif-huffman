@@ -134,4 +134,20 @@ void bitmapLibera (bitmap* bm){
     free (bm);
 }
 
-
+/**
+ * Remove o último bit adicionado ao mapa de bits.
+ * @param bm O mapa de bits.
+ */
+void bitmapRemoveLastBit(bitmap* bm) {
+    if (bm->length > 0) {
+        //encontra a posiçao do ultimo bit antes de decrementar o length
+        unsigned int byte_index = (bm->length - 1) / 8;
+        unsigned int bit_offset = 7 - ((bm->length - 1) % 8);
+        
+        //zera o bit na posiçao do antigo ultimo bit
+        bm->contents[byte_index] &= ~(1 << bit_offset);
+        
+        //decrementa
+        bm->length--;
+    }
+}
