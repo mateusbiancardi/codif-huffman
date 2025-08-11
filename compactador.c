@@ -47,18 +47,18 @@ static void constroiArvoreHuffman(Compactador *c) {
   Arvore *eof = criaNoFolha(256, 1);
   insereItemOrdenado(listaPrioridade, eof, comparaFrequencia);
 
-  int qntdLista = getQuantidadeItemsLista(listaPrioridade);
+//ALTERAÇÃO QUE EU FIZ: 
+//qtdLista--; ... = do jeito que tava, em algum moemnto o qtdLista ia ser 1 ou até menos
+//fora isso, sua logica continua a mesma, só adaptei essa questão
+
   // cria nós internos até sobrar o nó raiz
-  while (qntdLista > 1) {
+  while (getQuantidadeItemsLista(listaPrioridade) > 1) {
     Arvore *noEsquerdo = removePrimeiroItem(listaPrioridade);
     Arvore *noDireito = removePrimeiroItem(listaPrioridade);
 
     // cria nó interno e reinsere na lista
     Arvore *interno = criaNoInterno(noEsquerdo, noDireito);
     insereItemOrdenado(listaPrioridade, interno, comparaFrequencia);
-
-    // Retira 2 itens e adiciona 1
-    qntdLista--;
   }
 
   // armazena o nó raiz no compactador
