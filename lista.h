@@ -87,6 +87,21 @@ int verificaItemListaExiste(Lista *l, void *id, int (*c)(void *id, void *item));
 void *removeItemLista(Lista *l, void *id, int (*c)(void *id, void *item));
 
 /**
+ * @brief Remove e retorna o primeiro item da lista.
+ *
+ * Esta função remove o primeiro elemento da lista encadeada e retorna
+ * um ponteiro para os dados que estavam armazenados neste elemento.
+ * A memória da célula é liberada, mas a memória dos dados deve ser
+ * gerenciada pelo chamador da função.
+ *
+ * @param l Ponteiro para a estrutura da lista
+ * @return void* Ponteiro para os dados do primeiro item removido,
+ *               ou NULL se a lista estiver vazia ou for inválida
+ *
+ */
+void *removePrimeiroItem(Lista *l);
+
+/**
  * @brief Libera toda a memória associada à lista, incluindo suas células.
  *
  * Opcionalmente, pode liberar a memória de cada item armazenado se uma função
@@ -137,5 +152,18 @@ Celula *getAnteriorCelula(Celula *c);
  * @return O ponteiro (void*) para o item armazenado.
  */
 void *getItemFromCelula(Celula *c);
+
+/**
+ * @brief Retorna a quantidade total de itens presentes na lista.
+ *
+ * Esta função percorre a lista e conta o número de elementos armazenados,
+ * retornando o valor total como um inteiro.
+ *
+ * @param l Ponteiro para a estrutura Lista da qual se deseja obter a quantidade
+ * de itens
+ * @return int Número total de itens na lista, ou 0 se a lista estiver vazia ou
+ * for NULL
+ */
+int getQuantidadeItemsLista(Lista *l);
 
 #endif // LISTA_H

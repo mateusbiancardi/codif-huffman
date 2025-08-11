@@ -9,7 +9,7 @@ typedef struct arvore Arvore;
  * @param frequencia A frequência de ocorrência do caractere
  * @return Ponteiro para o novo nó folha criado
  */
-Arvore *criaNoFolha(unsigned char caractere, int frequencia);
+Arvore *criaNoFolha(int caractere, int frequencia);
 
 /**
  * @brief Cria um nó interno da árvore
@@ -47,7 +47,7 @@ int comparaFrequencia(void *arv1, void *arv2);
  * @param a Ponteiro para o nó da árvore
  * @return O caractere armazenado no nó (válido apenas para nós folha)
  */
-unsigned char getCaractere(Arvore *a);
+int getCaractere(Arvore *a);
 
 /**
  * @brief Obtém a subárvore esquerda de um nó

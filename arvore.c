@@ -3,14 +3,14 @@
 
 struct arvore {
   int frequencia;
-  unsigned char caractere;
+  int caractere; // Consegue armazenar mais que 256 caracteres
   Arvore *esquerda;
   Arvore *direita;
 };
 
 int arvoreVazia(Arvore *a) { return a == NULL; }
 
-Arvore *criaNoFolha(unsigned char caractere, int frequencia) {
+Arvore *criaNoFolha(int caractere, int frequencia) {
   Arvore *a = (Arvore *)calloc(1, sizeof(Arvore));
 
   a->frequencia = frequencia;
@@ -38,7 +38,7 @@ int comparaFrequencia(void *arv1, void *arv2) {
   return getFrequencia(arvore1) - getFrequencia(arvore2);
 };
 
-unsigned char getCaractere(Arvore *a) { return a->caractere; };
+int getCaractere(Arvore *a) { return a->caractere; };
 
 Arvore *getEsquerda(Arvore *a) { return a->esquerda; };
 

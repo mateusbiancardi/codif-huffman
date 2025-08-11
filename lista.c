@@ -7,6 +7,7 @@
 
 #include "lista.h"
 #include <stdlib.h>
+#include <string.h>
 
 struct celula {
   void *item;
@@ -152,6 +153,27 @@ void *removeItemLista(Lista *l, void *id, int (*c)(void *id, void *item)) {
   return itemRemovido;
 }
 
+void *removePrimeiroItem(Lista *l) {
+  Celula *p = l->primeiro;
+
+  if (p == NULL) {
+    return NULL;
+  }
+
+  if (l->primeiro == l->ultimo) {
+    l->primeiro = NULL;
+    l->ultimo = NULL;
+  } else {
+    l->primeiro = p->prox;
+    l->primeiro->ant = NULL;
+  }
+
+  void *itemRemovido = p->item;
+  free(p);
+
+  return itemRemovido;
+};
+
 void liberaLista(Lista *l, void (*liberaItem)(void *item)) {
   Celula *p = l->primeiro;
   Celula *temp;
@@ -177,3 +199,16 @@ Celula *getProximaCelula(Celula *c) { return c->prox; }
 Celula *getAnteriorCelula(Celula *c) { return c->ant; }
 
 void *getItemFromCelula(Celula *c) { return c->item; }
+
+int getQuantidadeItemsLista(Lista *l) {
+  int qntd = 0;
+
+  Celula *c = getPrimeiraCelula(l);
+
+  while (c != NULL) {
+    qntd++;
+    c = c->prox;
+  }
+
+  return qntd;
+};
