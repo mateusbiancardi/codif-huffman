@@ -1,3 +1,12 @@
+/*
+ *
+ * Tad Arvore
+ * Estrutura de dados central para o algoritmo de codificação de Huffman
+ * Autores: Mateus Biancardi e Rafaela Capovilla
+ *
+ */
+
+
 #ifndef ARVORE_H_
 #define ARVORE_H_
 

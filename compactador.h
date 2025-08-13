@@ -1,3 +1,11 @@
+/*
+ *
+ * Tad Compactador
+ * Responsável por orquestrar todo o processo de compactação de arquivos
+ * Autores: Mateus Biancardi e Rafaela Capovilla
+ *
+ */
+
 #ifndef COMPACTADOR_H
 #define COMPACTADOR_H
 

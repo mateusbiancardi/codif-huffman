@@ -1,3 +1,11 @@
+/*
+ *
+ * Tad Descompactador
+ * Responsável por orquestrar todo o processo de descompactação de arquivos
+ * Autores: Mateus Biancardi e Rafaela Capovilla
+ *
+ */
+
 #ifndef DESCOMPACTADOR_H
 #define DESCOMPACTADOR_H
 
