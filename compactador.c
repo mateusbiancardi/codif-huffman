@@ -110,17 +110,21 @@ static void geraTabelaCodigos(Compactador *c) {
 
 static void escreveCabecalho(Arvore *a, bitmap *bm) {
   if (ehNoFolha(a)) {
-    // Escreve o bit 1 para indicar que é um nó folha
-    bitmapAppendLeastSignificantBit(bm, 1);
-    // Escreve os 8 bits do caractere
+    bitmapAppendLeastSignificantBit(bm, 1); // Continua sendo 1 para folha
+
     int caractere = getCaractere(a);
-    for (int i = 7; i >= 0; i--) {
-      bitmapAppendLeastSignificantBit(bm, (caractere >> i) & 1);
+    // --- ALTERAÇÃO AQUI ---
+    if (caractere == 256) {                   // Se for a folha EOF
+      bitmapAppendLeastSignificantBit(bm, 1); // Escreve o bit '1' especial
+    } else {
+      bitmapAppendLeastSignificantBit(bm, 0); // Bit '0' para folhas normais
+      // E então escreve os 8 bits do caractere normal
+      for (int i = 7; i >= 0; i--) {
+        bitmapAppendLeastSignificantBit(bm, (caractere >> i) & 1);
+      }
     }
   } else {
-    // Escreve o bit 0 para indicar que é um nó interno
-    bitmapAppendLeastSignificantBit(bm, 0);
-
+    bitmapAppendLeastSignificantBit(bm, 0); // Continua 0 para nó interno
     escreveCabecalho(getEsquerda(a), bm);
     escreveCabecalho(getDireita(a), bm);
   }
@@ -201,12 +205,44 @@ Compactador *criaCompactador(const char *caminho_entrada) {
   return c;
 };
 
+// Função auxiliar para imprimir a estrutura da árvore com indentação
+void imprimeArvore(Arvore *a, int nivel) {
+  if (a == NULL) {
+    return;
+  }
+
+  // Imprime espaços para a indentação, mostrando a profundidade
+  for (int i = 0; i < nivel; i++) {
+    printf("  ");
+  }
+
+  if (ehNoFolha(a)) {
+    int caractere = getCaractere(a);
+    // Se for um caractere imprimível, mostra. Senão, mostra o código.
+    if (caractere >= 32 && caractere <= 126) {
+      printf("Folha: '%c'\n", (char)caractere);
+    } else if (caractere == 256) {
+      printf("Folha: [EOF]\n");
+    } else {
+      printf("Folha: [%d]\n", caractere);
+    }
+  } else {
+    printf("No Interno\n");
+    // Chama recursivamente para os filhos
+    imprimeArvore(getEsquerda(a), nivel + 1);
+    imprimeArvore(getDireita(a), nivel + 1);
+  }
+}
+
 void executaCompactacao(Compactador *c) {
   // conta a frequência de cada caracter
   contaFrequencia(c);
 
   // constrói a árvore
   constroiArvoreHuffman(c);
+
+  printf("\n--- Árvore Original (do Compactador): ---\n");
+  imprimeArvore(c->arvore, 0);
 
   // gera a tabela de códigos a partir da árvore
   geraTabelaCodigos(c);
