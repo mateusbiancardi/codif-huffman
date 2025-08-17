@@ -13,6 +13,7 @@ struct map {
     unsigned int max_size;        ///< tamanho maximo em bits
     unsigned int length;         ///< tamanho atual em bits
     unsigned char* contents;     ///< conteudo do mapa de bits
+	unsigned int capacity;      ///< capacidade alocada em bits
 };
 
 /**
@@ -59,19 +60,15 @@ unsigned int bitmapGetLength(bitmap* bm) {
  * @param max_size O tamanho maximo para o mapa de bits.
  * @return O mapa de bits inicializado.
  */
-bitmap* bitmapInit(unsigned int max_size) {
-	bitmap* bm;
-    bm = (bitmap*)malloc(sizeof(bitmap));
-	// definir tamanho maximo em bytes, com arredondamento para cima
-	unsigned int max_sizeInBytes=(max_size+7)/8;
-	// alocar espaco de memoria para o tamanho maximo em bytes
-	bm->contents=calloc(max_sizeInBytes, sizeof(char));
-	// verificar alocacao de memoria
-	assert(bm->contents!=NULL, "Erro de alocacao de memoria.");
-	// definir valores iniciais para tamanho maximo e tamanho atual
-	bm->max_size=max_size;
-	bm->length=0;
-	return bm;
+bitmap* bitmapInit(unsigned int initial_capacity) {
+    bitmap* bm = (bitmap*)malloc(sizeof(bitmap));
+    unsigned int capacityInBytes = (initial_capacity + 7) / 8;
+    bm->contents = calloc(capacityInBytes, sizeof(char));
+    assert(bm->contents != NULL, "Erro de alocacao de memoria.");
+    bm->capacity = initial_capacity;
+    bm->length = 0;
+    bm->max_size = initial_capacity; // pode remover se não for mais usar
+    return bm;
 }
 
 /**
@@ -108,6 +105,23 @@ static void bitmapSetBit(bitmap* bm, unsigned int index, unsigned char bit) {
 }
 
 
+static void bitmapEnsureCapacity(bitmap* bm, unsigned int min_capacity) {
+    if (bm->capacity >= min_capacity) return;
+    unsigned int new_capacity = bm->capacity ? bm->capacity * 2 : 1024;
+    while (new_capacity < min_capacity) {
+        new_capacity *= 2;
+    }
+    unsigned int new_bytes = (new_capacity + 7) / 8;
+    bm->contents = realloc(bm->contents, new_bytes);
+    assert(bm->contents != NULL, "Erro de realocacao de memoria.");
+    // zera a nova área alocada
+    unsigned int old_bytes = (bm->capacity + 7) / 8;
+    if (new_bytes > old_bytes) {
+        memset(bm->contents + old_bytes, 0, new_bytes - old_bytes);
+    }
+    bm->capacity = new_capacity;
+}
+
 /**
  * Adiciona um bit no final do mapa de bits.
  * @param bm O mapa de bits.
@@ -117,13 +131,10 @@ static void bitmapSetBit(bitmap* bm, unsigned int index, unsigned char bit) {
  * and (bitmapGetLength(bm) == bitmapGetLength(bm) @ pre+1)
  */
 void bitmapAppendLeastSignificantBit(bitmap* bm, unsigned char bit) {
-	// verificar se bm->length<bm->max_size, caso contrario, o bitmap esta' cheio
-	assert(bm->length<bm->max_size, "Tamanho maximo excedido no mapa de bits.");
-	// como um bit sera' adicionado, devemos incrementar o tamanho do mapa de bits
-	bm->length++;
-	bitmapSetBit(bm, bm->length-1, bit);
+    bitmapEnsureCapacity(bm, bm->length + 1);
+    bm->length++;
+    bitmapSetBit(bm, bm->length-1, bit);
 }
-
 /**
  * Libera a memória dinâmica alocada para o mapa de bits.
  * @param bm O mapa de bits.
