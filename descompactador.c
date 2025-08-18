@@ -13,16 +13,15 @@
 #include <string.h>
 
 struct descompactador {
-  char *arqEntrada; // arquivo de entrada compactado
-  char *arqSaida;   // arquivo de saída descompactado
+  char *arqEntrada;
+  char *arqSaida;
   Arvore *arvore;
 };
 
 Descompactador *criaDescompactador(const char *caminho_entrada) {
   Descompactador *d = calloc(1, sizeof(Descompactador));
   if (d == NULL) {
-    perror("Erro ao alocar memória para o descompactador");
-    exit(EXIT_FAILURE);
+    exit(1);
   }
 
   // duplica a string do caminho de entrada pro descompactador ter sua própria
@@ -36,10 +35,9 @@ Descompactador *criaDescompactador(const char *caminho_entrada) {
     d->arqSaida =
         (char *)malloc(len - 4); // len - 5 para remover ".comp", +1 para '\0'
     if (d->arqSaida == NULL) {
-      perror("Erro ao alocar memória para o nome do arquivo de saída");
       free(d->arqEntrada);
       free(d);
-      exit(EXIT_FAILURE);
+      exit(1);
     }
     strncpy(d->arqSaida, caminho_entrada, len - 5);
     d->arqSaida[len - 5] = '\0';
@@ -57,7 +55,7 @@ static int leProximoBit(FILE *arq) {
   static int byte_atual = 0;
   static int contador_bits = 0;
 
-  // Se já lemos todos os 8 bits do byte atual, leia um novo byte do arquivo
+  // se já lemos todos os 8 bits do byte atual, leia um novo byte do arquivo
   if (contador_bits == 0) {
     byte_atual = fgetc(arq);
     if (byte_atual == EOF) {
@@ -66,10 +64,10 @@ static int leProximoBit(FILE *arq) {
     contador_bits = 8;
   }
 
-  // Extrai o bit mais significativo do byte atual
+  // extrai o bit mais significativo do byte atual
   int bit = (byte_atual >> 7) & 1;
 
-  // Prepara o byte para a próxima leitura, deslocando os bits para a esquerda
+  // prepara o byte para a próxima leitura, deslocando os bits para a esquerda
   byte_atual = byte_atual << 1;
 
   contador_bits--;
@@ -84,13 +82,14 @@ static Arvore *leCabecalho(FILE *arq) {
     return NULL;
   }
 
+  // nó folha
   if (tipo_bit == 1) {
     int bit_tipo_folha = leProximoBit(arq); // lê o bit extra
     if (bit_tipo_folha == 1) {
       return criaNoFolha(256, 0);
-    } else { // É uma folha normal
+    } else {
       int caractere = 0;
-      // Lê os próximos 8 bits para reconstruir o caractere
+      // lê os próximos 8 bits para reconstruir o caractere
       for (int i = 0; i < 8; i++) {
         int bit = leProximoBit(arq);
         if (bit == EOF)
@@ -99,7 +98,7 @@ static Arvore *leCabecalho(FILE *arq) {
       }
       return criaNoFolha(caractere, 0);
     }
-  } else { // Nó interno (lógica inalterada)
+  } else {
     Arvore *esquerda = leCabecalho(arq);
     Arvore *direita = leCabecalho(arq);
     return criaNoInterno(esquerda, direita);
@@ -115,52 +114,27 @@ static void descompactaDados(Descompactador *d, FILE *arq_entrada,
   Arvore *noAtual = d->arvore;
   int bit;
 
-  // lê o arquivo um bit de cada vez
+  // le um bit de cada vez
   while ((bit = leProximoBit(arq_entrada)) != EOF) {
 
-    // Navega na árvore com base no bit lido
+    // Navega na árvore: 0 = esquerda, 1 = direita
     if (bit == 0) {
       noAtual = getEsquerda(noAtual);
     } else {
       noAtual = getDireita(noAtual);
     }
 
+    // se chegou numa folha, encontrou um caractere
     if (ehNoFolha(noAtual)) {
+      // se for EOF, para a descompactação
       if (getCaractere(noAtual) == 256) { // EOF
         break;
       }
-      fputc(getCaractere(noAtual), arq_saida); // Escreve o caractere
+      // escreve o caractere no arquivo de saída
+      fputc(getCaractere(noAtual), arq_saida);
+      // volta para a raiz da árvore para continuar
       noAtual = d->arvore;
     }
-  }
-}
-
-// Função auxiliar para imprimir a estrutura da árvore com indentação
-void imprimeArvore2(Arvore *a, int nivel) {
-  if (a == NULL) {
-    return;
-  }
-
-  // Imprime espaços para a indentação, mostrando a profundidade
-  for (int i = 0; i < nivel; i++) {
-    printf("  ");
-  }
-
-  if (ehNoFolha(a)) {
-    int caractere = getCaractere(a);
-    // Se for um caractere imprimível, mostra. Senão, mostra o código.
-    if (caractere >= 32 && caractere <= 126) {
-      printf("Folha: '%c'\n", (char)caractere);
-    } else if (caractere == 256) {
-      printf("Folha: [EOF]\n");
-    } else {
-      printf("Folha: [%d]\n", caractere);
-    }
-  } else {
-    printf("No Interno\n");
-    // Chama recursivamente para os filhos
-    imprimeArvore2(getEsquerda(a), nivel + 1);
-    imprimeArvore2(getDireita(a), nivel + 1);
   }
 }
 
@@ -168,31 +142,24 @@ void executaDescompactacao(Descompactador *d) {
   if (!d)
     return;
 
-  FILE *arq_entrada =
-      fopen(d->arqEntrada, "rb"); // abre o arquivo pra leitra binaria
+  // abre o arquivo pra leitura binaria
+  FILE *arq_entrada = fopen(d->arqEntrada, "rb");
   if (arq_entrada == NULL) {
-    perror("Erro ao abrir arquivo de entrada");
-    exit(EXIT_FAILURE);
+    exit(1);
   }
 
-  // le o cabeçalho e reconstoi a arvore
+  // le o cabeçalho e reconstroi a arvore
   d->arvore = leCabecalho(arq_entrada);
 
-  printf("\n--- Árvore Reconstruída (do Descompactador): ---\n");
-  imprimeArvore2(d->arvore, 0);
-
   FILE *arq_saida =
-      fopen(d->arqSaida, "wb"); // abre um nobo arquivo pra escrever binario
+      fopen(d->arqSaida, "wb"); // abre um novo arquivo pra escrever binario
   if (arq_saida == NULL) {
-    perror("Erro ao abrir arquivo de saída");
     fclose(arq_entrada);
-    exit(EXIT_FAILURE);
+    exit(1);
   }
 
-  // descompacta os dados
   descompactaDados(d, arq_entrada, arq_saida);
 
-  // fecha os arquivos
   fclose(arq_saida);
   fclose(arq_entrada);
 }

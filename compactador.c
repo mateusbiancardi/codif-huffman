@@ -28,8 +28,7 @@ static void contaFrequencia(Compactador *c) {
   FILE *arq = fopen(c->arqEntrada, "rb");
 
   if (arq == NULL) {
-    perror("Erro ao abrir arquivo de entrada em contaFrequencia");
-    exit(EXIT_FAILURE);
+    exit(1);
   }
 
   // calcula a frequencia de todos os caracteres
@@ -60,6 +59,7 @@ static void constroiArvoreHuffman(Compactador *c) {
   int qntdLista = getQuantidadeItemsLista(listaPrioridade);
   // cria nós internos até sobrar o nó raiz
   while (qntdLista > 1) {
+    // remove os dois primeiros itens da lista
     Arvore *noEsquerdo = removePrimeiroItem(listaPrioridade);
     Arvore *noDireito = removePrimeiroItem(listaPrioridade);
 
@@ -67,7 +67,7 @@ static void constroiArvoreHuffman(Compactador *c) {
     Arvore *interno = criaNoInterno(noEsquerdo, noDireito);
     insereItemOrdenado(listaPrioridade, interno, comparaFrequencia);
 
-    // Retira 2 itens e adiciona 1
+    // retira 2 itens e adiciona 1
     qntdLista--;
   }
 
@@ -110,87 +110,88 @@ static void geraTabelaCodigos(Compactador *c) {
 
 static void escreveCabecalho(Arvore *a, bitmap *bm) {
   if (ehNoFolha(a)) {
-    bitmapAppendLeastSignificantBit(bm, 1); // Continua sendo 1 para folha
+    // escreve 1 para indicar nó folha
+    bitmapAppendLeastSignificantBit(bm, 1);
 
     int caractere = getCaractere(a);
-    // --- ALTERAÇÃO AQUI ---
-    if (caractere == 256) {                   // Se for a folha EOF
-      bitmapAppendLeastSignificantBit(bm, 1); // Escreve o bit '1' especial
+    // se é o EOF
+    if (caractere == 256) {
+      // escreve 1 para indicar o EOF
+      bitmapAppendLeastSignificantBit(bm, 1);
     } else {
-      bitmapAppendLeastSignificantBit(bm, 0); // Bit '0' para folhas normais
-      // E então escreve os 8 bits do caractere normal
+      // escreve 0 para indicar caractere normal
+      bitmapAppendLeastSignificantBit(bm, 0);
+      // escreve os 8 bits do caractere
       for (int i = 7; i >= 0; i--) {
         bitmapAppendLeastSignificantBit(bm, (caractere >> i) & 1);
       }
     }
   } else {
-    bitmapAppendLeastSignificantBit(bm, 0); // Continua 0 para nó interno
+    // escreve 0 indicando nó externo
+    bitmapAppendLeastSignificantBit(bm, 0);
     escreveCabecalho(getEsquerda(a), bm);
     escreveCabecalho(getDireita(a), bm);
   }
 }
 
 static void escreveArquivoCompactado(Compactador *c) {
-  FILE *arq_saida = fopen(c->arqSaida, "wb"); // abre binario
-  if (arq_saida == NULL) {
-    perror("Erro ao abrir arquivo de saida");
-    exit(EXIT_FAILURE);
+  FILE *arqSaida = fopen(c->arqSaida, "wb"); // abre binario
+  if (arqSaida == NULL) {
+    exit(1);
   }
 
   // abre o arquivo pra saber o tamanho dele
-  FILE *arq_para_medir = fopen(c->arqEntrada, "rb");
-  if (arq_para_medir == NULL) {
-    perror("Erro ao abrir arquivo de entrada para medir tamanho");
-    exit(EXIT_FAILURE);
+  FILE *arqParaMedir = fopen(c->arqEntrada, "rb");
+  if (arqParaMedir == NULL) {
+    exit(1);
   }
 
-  // move o cursor para o final do arquivo
-  fseek(arq_para_medir, 0, SEEK_END);
+  // busca o final do arquivo e conta quantos bytes tem
+  fseek(arqParaMedir, 0, SEEK_END);
+  long tamanhoArquivoBytes = ftell(arqParaMedir);
 
-  // pega a posição atual, que é o tamanho em bytes
-  long tamanho_arquivo_bytes = ftell(arq_para_medir);
+  fclose(arqParaMedir);
 
-  fclose(arq_para_medir);
+  // descobre o tamanho máximo do bitmap
+  unsigned int tamanhoMaxBits = (tamanhoArquivoBytes * 8) + (512 * 8);
+  bitmap *bm = bitmapInit(tamanhoMaxBits);
 
-  unsigned int tamanho_max_bits = (tamanho_arquivo_bytes * 8) + (512 * 8);
-
-  bitmap *bm = bitmapInit(tamanho_max_bits);
-
-  // escreve a árvore que é o cabeçalho do arquivo compactado
   escreveCabecalho(c->arvore, bm);
 
-  FILE *arq_orig = fopen(c->arqEntrada, "rb");
-  if (arq_orig == NULL) {
-    perror("Erro ao abrir arquivo de entrada");
-    exit(EXIT_FAILURE);
+  FILE *arqOriginal = fopen(c->arqEntrada, "rb");
+  if (arqOriginal == NULL) {
+    exit(1);
   }
 
+  // le cada caractere do arquivo original e escreve seu código binário no
+  // bitmap
   int caractere;
-  while ((caractere = fgetc(arq_orig)) != EOF) {
+  while ((caractere = fgetc(arqOriginal)) != EOF) {
     char *codigo = c->tabelaCodigos[caractere];
     for (int i = 0; codigo[i] != '\0'; i++) {
       bitmapAppendLeastSignificantBit(bm, codigo[i] - '0');
     }
   }
-  fclose(arq_orig);
+  fclose(arqOriginal);
 
   // escreve o eof no final
-  char *eof_codigo = c->tabelaCodigos[256];
-  for (int i = 0; eof_codigo[i] != '\0'; i++) {
-    bitmapAppendLeastSignificantBit(bm, eof_codigo[i] - '0');
+  char *eofCodigo = c->tabelaCodigos[256];
+  for (int i = 0; eofCodigo[i] != '\0'; i++) {
+    bitmapAppendLeastSignificantBit(bm, eofCodigo[i] - '0');
   }
 
-  // Calcula quantos bytes completos precisam ser escritos
-  unsigned int total_bytes = (bitmapGetLength(bm) + 7) / 8;
-  fwrite(bitmapGetContents(bm), sizeof(unsigned char), total_bytes, arq_saida);
+  // calcula quantos bytes completos precisam ser escritos
+  unsigned int totalBytes = (bitmapGetLength(bm) + 7) / 8;
+  fwrite(bitmapGetContents(bm), sizeof(unsigned char), totalBytes, arqSaida);
 
   bitmapLibera(bm);
-  fclose(arq_saida);
+  fclose(arqSaida);
 }
 
 Compactador *criaCompactador(const char *caminho_entrada) {
   Compactador *c = calloc(1, sizeof(Compactador));
 
+  // copia do caminho de entrada
   c->arqEntrada = strdup(caminho_entrada);
 
   // adiciona o .comp para o arquivo compactado
@@ -205,54 +206,18 @@ Compactador *criaCompactador(const char *caminho_entrada) {
   return c;
 };
 
-// Função auxiliar para imprimir a estrutura da árvore com indentação
-void imprimeArvore(Arvore *a, int nivel) {
-  if (a == NULL) {
-    return;
-  }
-
-  // Imprime espaços para a indentação, mostrando a profundidade
-  for (int i = 0; i < nivel; i++) {
-    printf("  ");
-  }
-
-  if (ehNoFolha(a)) {
-    int caractere = getCaractere(a);
-    // Se for um caractere imprimível, mostra. Senão, mostra o código.
-    if (caractere >= 32 && caractere <= 126) {
-      printf("Folha: '%c'\n", (char)caractere);
-    } else if (caractere == 256) {
-      printf("Folha: [EOF]\n");
-    } else {
-      printf("Folha: [%d]\n", caractere);
-    }
-  } else {
-    printf("No Interno\n");
-    // Chama recursivamente para os filhos
-    imprimeArvore(getEsquerda(a), nivel + 1);
-    imprimeArvore(getDireita(a), nivel + 1);
-  }
-}
-
 void executaCompactacao(Compactador *c) {
-  // conta a frequência de cada caracter
   contaFrequencia(c);
 
-  // constrói a árvore
   constroiArvoreHuffman(c);
 
-  printf("\n--- Árvore Original (do Compactador): ---\n");
-  imprimeArvore(c->arvore, 0);
-
-  // gera a tabela de códigos a partir da árvore
   geraTabelaCodigos(c);
 
-  // escreve o arquivo compactado
   escreveArquivoCompactado(c);
 }
 
 void liberaCompactador(Compactador *c) {
-  if (c == NULL) { // caso o ponteiro nao seja valido
+  if (c == NULL) {
     return;
   }
 
